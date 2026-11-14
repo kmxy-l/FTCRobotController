@@ -1,0 +1,14 @@
+package org.firstinspires.ftc.teamcode;
+
+public class Configuration {
+    public static final float rotateMaxSpeed = 0.9f;
+    public static final float sprintRotateMaxSpeed = 1f;
+    public static final float middleLauncherPollenSpeed = (((float) 1300 /60)* 28);
+    public static final float backLauncherPollenSpeed = (((float) 2000 /60)* 28);
+    public static final float middleLauncherNectarSpeed = (((float) 2060 /60)* 28);
+    public static final float backLauncherNectarSpeed = (((float) 2475 /60)* 28);
+
+    public static final double liftTop = 0.0;
+    public static  final double liftBottom = 1.0;
+
+}
