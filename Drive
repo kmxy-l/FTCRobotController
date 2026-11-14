@@ -1,0 +1,157 @@
+package org.firstinspires.ftc.teamcode;
+
+import com.pedropathing.follower.Follower;
+import com.pedropathing.follower.ManualDrive;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.CRServo;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.Gamepad;
+import com.qualcomm.robotcore.util.Range;
+import static org.firstinspires.ftc.teamcode.Configuration.*;
+
+import org.firstinspires.ftc.teamcode.pedro.Constants;
+
+@TeleOp(name = "Drive")
+public class Drive extends LinearOpMode {
+
+
+    private Follower follower;
+
+    public static int direction = 1;
+
+    @Override
+    public void runOpMode() {
+
+        //follower = Constants.create(hardwareMap);
+
+        DcMotor backLeft = hardwareMap.get(DcMotor.class, "BackLeft");
+        DcMotor backRight = hardwareMap.get(DcMotor.class, "BackRight");
+        DcMotor frontLeft = hardwareMap.get(DcMotor.class, "FrontLeft");
+        DcMotor frontRight = hardwareMap.get(DcMotor.class, "FrontRight");
+
+        DcMotor intake = hardwareMap.get(DcMotor.class, "Intake");
+
+        DcMotorEx middleLauncher = hardwareMap.get(DcMotorEx.class, "MiddleLauncher");
+        DcMotorEx backLauncher = hardwareMap.get(DcMotorEx.class, "BackLauncher");
+        middleLauncher.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        backLauncher.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+        Servo lift = hardwareMap.get(Servo.class, "lift");
+        Servo block = hardwareMap.get(Servo.class, "block");
+        CRServo spinner = hardwareMap.get(CRServo.class, "spinner");
+        Servo gate = hardwareMap.get(Servo.class, "gate");
+
+        frontLeft.setDirection(DcMotor.Direction.FORWARD);
+        frontRight.setDirection(DcMotor.Direction.FORWARD);
+        backLeft.setDirection(DcMotor.Direction.FORWARD);
+        backRight.setDirection(DcMotor.Direction.FORWARD);
+
+        backLauncher.setDirection(DcMotor.Direction.REVERSE);
+
+        waitForStart();
+
+        if (opModeIsActive()) {
+
+            while (opModeIsActive()) {
+
+                //=====MISC=====//
+                spinner.setPower(-1);
+                intake.setPower(-gamepad1.left_trigger);
+                lift.setPosition(liftBottom - ((liftBottom-liftTop)*gamepad2.right_trigger));
+
+                //=====LAUNCHING=====//
+                if(gamepad2.a) {
+                    middleLauncher.setVelocity(middleLauncherPollenSpeed);
+                    backLauncher.setVelocity(backLauncherPollenSpeed);
+                }
+                if(gamepad2.x) {
+                    middleLauncher.setVelocity(middleLauncherNectarSpeed);
+                    backLauncher.setVelocity(backLauncherNectarSpeed);
+                }
+                if (gamepad2.b) {
+                    middleLauncher.setVelocity(0);
+                    backLauncher.setVelocity(0);
+                }
+
+
+                //=====Ball Gate=====//
+                if (gamepad2.right_bumper){
+                    gate.setPosition(0.95);
+                } else{
+                    gate.setPosition(0.85);
+                }
+                //=====BLOCKING SIGH=====//
+                if (gamepad2.dpad_up){
+                    block.setPosition(1);
+                }
+                if (gamepad2.dpad_down){
+                    block.setPosition(0);
+                }
+
+                //=====DRIVING=====//
+                if(gamepad1.aWasPressed()) {
+                    direction *= -1;
+                }
+
+                drive(gamepad1, frontLeft, frontRight, backLeft, backRight);
+
+                /*ManualDrive.driveOrHold(
+                        follower,
+                        -gamepad1.left_stick_y,   // forward
+                        -gamepad1.left_stick_x,   // strafe
+                        -gamepad1.right_stick_x   // turn
+                );
+
+                follower.update();
+                */
+                telemetry.update();
+            }
+        }
+    }
+
+    public static void drive(Gamepad gamepad1, DcMotor FrontLeft, DcMotor FrontRight, DcMotor BackLeft, DcMotor BackRight) {
+        double y  = -gamepad1.left_stick_y * direction;
+        double x  =  gamepad1.left_stick_x * direction;
+        double rx =  gamepad1.right_stick_x * (gamepad1.right_stick_button ? sprintRotateMaxSpeed:rotateMaxSpeed);
+
+
+        y  = Math.abs(y)  > 0.1 ? y  : 0;
+        x  = Math.abs(x)  > 0.1 ? x  : 0;
+        rx = Math.abs(rx) > 0.1 ? rx : 0;
+
+        y = Range.clip(y, -1, 1);
+
+        y  = Math.copySign(y * y * y, y);
+        x  = Math.copySign(x * x * x, x);
+        rx = Math.copySign(rx * rx * rx, rx);
+
+
+        double fl = y + x + rx;
+        double fr = y - x - rx;
+        double bl = y - x + rx;
+        double br = y + x - rx;
+
+        double max = Math.max(
+                Math.max(Math.abs(fl), Math.abs(fr)),
+                Math.max(Math.abs(bl), Math.abs(br))
+        );
+
+        if (max > 1.0) {
+            fl /= max;
+            fr /= max;
+            bl /= max;
+            br /= max;
+        }
+
+
+
+        FrontLeft.setPower(fl);
+        FrontRight.setPower(fr);
+        BackLeft.setPower(bl);
+        BackRight.setPower(br);
+    }
+}
